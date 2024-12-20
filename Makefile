@@ -1,14 +1,23 @@
+SRC_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
+ifneq ($(CURDIR), $(SRC_DIR))
+ifdef VPATH
+# VPATH must be an absolute path because pgxs.mk does not properly handle
+# relative ones, such as scripts in the data folder, VPATH must be an absolute
+# path because pgxs.mk does not handle relative paths correctly, such as
+# scripts in the "data" folder
+VPATH := $(realpath $(VPATH))
+else
+VPATH := $(SRC_DIR)
+endif
+endif
 
-include Makefile.common.mk
+include $(SRC_DIR)/Makefile.common.mk
 
 RELEASE_SQL      = $(EXTENSION)--$(PGSPHERE_VERSION).sql
 USE_PGXS         = 1
 USE_HEALPIX     ?= 1
 PGINDENT        ?= pgindent
 PGBSDINDENT     ?= pg_bsd_indent
-
-# the base dir name may be changed depending on git clone command
-SRC_DIR = $(shell basename $(shell pwd))
 
 MODULE_big = pg_sphere
 OBJS       = src/sscan.o src/sparse.o src/sbuffer.o src/vector3d.o src/point.o \
@@ -101,8 +110,12 @@ SHLIB_LINK += $(shell $(PKG_CONFIG) --libs healpix_cxx)
 LINK.shared = g++ -shared
 endif
 
+# Used in upgrade scripts creation rules
+.SECONDEXPANSION:
+
 # healpix_bare.c isn't ours so we refrain from fixing the warnings in there
 healpix_bare/healpix_bare.o : healpix_bare/healpix_bare.c
+	$(MKDIR_P) $(dir $@)
 	$(COMPILE.c) -Wno-declaration-after-statement -o $@ $^
 
 pg_version := $(word 2,$(shell $(PG_CONFIG) --version))
@@ -151,53 +164,58 @@ AUGMENT_1_0_115B0G = $(AUGMENT_FROM_GAVO)
 UPGRADE_1_0_115B0G = contains-ops-fixes-2.sql pgs_gist_drop_spoint2.sql
 
 # test installation B (generic)
-pg_sphere--1.0--1.0_gavo.sql: # dummy upgrade to allow for descriptive names
-	cat upgrade_scripts/$@.in > $@
-pg_sphere--1.0_gavo--1.1.5beta0gavo.sql: $(addsuffix .in, \
-		$(AUGMENT_1_0_115B0G) \
-		$(addprefix upgrade_scripts/, $(UPGRADE_1_0_115B0G)))
-	cat upgrade_scripts/$@.in $^ > $@
+pg_sphere--1.0--1.0_gavo.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@))
+	cat $+ > $@
+
+pg_sphere--1.0_gavo--1.1.5beta0gavo.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@)) \
+		$(addsuffix .in, $(AUGMENT_1_0_115B0G) $(addprefix upgrade_scripts/, $(UPGRADE_1_0_115B0G)))
+	cat $+ > $@
 
 ifneq ($(USE_HEALPIX),0)
-pg_sphere--1.1.5beta0gavo--1.1.5beta2gavo.sql: pgs_moc_type.sql.in
-	cat upgrade_scripts/$@.in $^ > $@
+pg_sphere--1.1.5beta0gavo--1.1.5beta2gavo.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@)) \
+		pgs_moc_type.sql.in
+	cat $+ > $@
 
-pg_sphere--1.1.5beta2gavo--1.1.5beta4gavo.sql:
-	cat upgrade_scripts/$@.in $^ > $@
+pg_sphere--1.1.5beta2gavo--1.1.5beta4gavo.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@))
+	cat $+ > $@
 
-pg_sphere--1.1.5beta4gavo--1.2.0.sql: pgs_moc_ops.sql.in
-	cat upgrade_scripts/$@.in $^ > $@
+pg_sphere--1.1.5beta4gavo--1.2.0.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@)) \
+		pgs_moc_ops.sql.in
+	cat $+ > $@
 
-pg_sphere--1.2.0--1.2.1.sql: pgs_moc_geo_casts.sql.in pgs_epochprop.sql.in
-	cat upgrade_scripts/$@.in $^ > $@
+pg_sphere--1.2.0--1.2.1.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@)) \
+		pgs_moc_geo_casts.sql.in pgs_epochprop.sql.in
+	cat $+ > $@
 
-pg_sphere--1.2.1--1.2.2.sql: upgrade_scripts/pg_sphere--1.2.1--1.2.2-healpix.sql.in
-	cat upgrade_scripts/$@.in $^ > $@
+pg_sphere--1.2.1--1.2.2.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@ pg_sphere--1.2.1--1.2.2-healpix.sql))
+	cat $+ > $@
 else
-pg_sphere--1.1.5beta0gavo--1.1.5beta2gavo.sql:
-	cat upgrade_scripts/$@.in > $@
+pg_sphere--1.1.5beta0gavo--1.1.5beta2gavo.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@))
+	cat $+ > $@
 
-pg_sphere--1.1.5beta2gavo--1.1.5beta4gavo.sql:
-	cat upgrade_scripts/$@.in > $@
+pg_sphere--1.1.5beta2gavo--1.1.5beta4gavo.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@))
+	cat $+ > $@
 
-pg_sphere--1.1.5beta4gavo--1.2.0.sql:
-	cat upgrade_scripts/$@.in > $@
+pg_sphere--1.1.5beta4gavo--1.2.0.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@))
+	cat $+ > $@
 
-pg_sphere--1.2.0--1.2.1.sql: pgs_epochprop.sql.in
-	cat upgrade_scripts/$@.in $^ > $@
+pg_sphere--1.2.0--1.2.1.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@)) \
+		pgs_epochprop.sql.in
+	cat $+ > $@
 
-pg_sphere--1.2.1--1.2.2.sql:
-	cat upgrade_scripts/$@.in > $@
+pg_sphere--1.2.1--1.2.2.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@))
+	cat $+ > $@
 endif
 
-pg_sphere--1.2.2--1.2.3.sql:
-	cat upgrade_scripts/$@.in > $@
+pg_sphere--1.2.2--1.2.3.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@))
+	cat $+ > $@
 
-pg_sphere--1.2.3--1.3.0.sql: pgs_brin.sql.in
-	cat upgrade_scripts/$@.in $^ > $@
+pg_sphere--1.2.3--1.3.0.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@)) \
+		pgs_brin.sql.in
+	cat $+ > $@
 
-pg_sphere--1.3.0--1.3.1.sql:
-	cat upgrade_scripts/$@.in > $@
+pg_sphere--1.3.0--1.3.1.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@))
+	cat $+ > $@
 
 ifeq ($(has_support_functions),y)
 pg_sphere--1.3.1--1.4.0.sql: pgs_gist_support.sql.in
@@ -207,27 +225,31 @@ ifeq ($(has_index_options),y)
 pg_sphere--1.3.1--1.4.0.sql: pgs_moc_options.sql.in
 endif
 endif
-pg_sphere--1.3.1--1.4.0.sql: pgs_circle_sel.sql.in pgs_hash.sql.in
-	cat upgrade_scripts/$@.in $^ > $@
+pg_sphere--1.3.1--1.4.0.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@)) \
+		pgs_circle_sel.sql.in pgs_hash.sql.in
+	cat $+ > $@
 
 pg_sphere--1.4.0--1.4.1.sql pg_sphere--1.4.1--1.4.2.sql:
 	@echo "-- Nothing to upgrade in the schema" > $@
 
-pg_sphere--1.4.2--1.5.0.sql:
-	cat upgrade_scripts/$@.in $^ > $@
+pg_sphere--1.4.2--1.5.0.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@))
+	cat $+ > $@
 
-pg_sphere--1.5.0--1.5.1.sql:
-	cat upgrade_scripts/$@.in $^ > $@
+pg_sphere--1.5.0--1.5.1.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@))
+	cat $+ > $@
 
-pg_sphere--1.5.1--1.5.2.sql:
-	cat upgrade_scripts/$@.in $^ > $@
+pg_sphere--1.5.1--1.5.2.sql: $(addprefix  upgrade_scripts/, $(addsuffix .in, $$@))
+	cat $+ > $@
 
 # end of local stuff
 
-src/sscan.o : src/sparse.c
+src/sscan.o : src/sscan.c
+	$(MKDIR_P) $(dir $@)
+	$(COMPILE.c) $(OUTPUT_OPTION) $<
 
 src/sparse.c: src/sparse.y
 ifdef YACC
+	$(MKDIR_P) $(dir $@)
 	$(YACC) -d $(YFLAGS) -p sphere_yy -o $@ $<
 else
 	@$(missing) bison $< $@
@@ -235,14 +257,15 @@ endif
 
 src/sscan.c : src/sscan.l
 ifdef FLEX
+	$(MKDIR_P) $(dir $@)
 	$(FLEX) $(FLEXFLAGS) -Psphere -o$@ $<
 else
 	@$(missing) flex $< $@
 endif
 
 dist : clean
-	find . -name '*~' -type f -exec rm {} \;
-	cd .. && tar --transform s/$(SRC_DIR)/pgsphere-$(PGSPHERE_VERSION)/ --exclude CVS --exclude .git -czf pgsphere-$(PGSPHERE_VERSION).tar.gz $(SRC_DIR) && cd -
+	-find $(SRC_DIR) -name '*~' -type f -exec rm {} \;
+	tar --transform 's|^$(SRC_DIR)|pgsphere-$(PGSPHERE_VERSION)/|' --exclude CVS --exclude .git -czPf $(SRC_DIR)/../pgsphere-$(PGSPHERE_VERSION).tar.gz $(SRC_DIR)
 
 # To use pgindent, set the PATH environment variable to include the directories
 # containing the binaries pgindent and pg_bsd_indent. It is important to
@@ -261,16 +284,19 @@ dist : clean
 #
 # pgindent-excludes.list is used to specify files to be ignored.
 #
-pgindent:
+pgindent: src
 	$(PGINDENT) \
 		--typedefs=pgindent-typedefs.list \
 		--excludes=pgindent-excludes.list \
 		--indent=${PGBSDINDENT} \
-		src
+		$+
 
-pgindent-headers:
+pgindent-headers: src
 	$(PGINDENT) \
 		--typedefs=pgindent-typedefs.list \
 		--excludes=pgindent-excludes.list \
 		--indent=${PGBSDINDENT} \
-		src/*.h
+		$(addsuffix /*.h, $+)
+
+all:
+	@echo $(MAKEFILE_LIST)
