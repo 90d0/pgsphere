@@ -255,9 +255,9 @@ SELECT spath '{(280d, -8d),(280d, -9d)}'  &&  sellipse '<{10d,5d},(280d, -8d),90
 
 -- create path as aggregate
 SELECT spath(data.p) FROM ( SELECT spoint '(0,1)' as p UNION ALL SELECT spoint '(1,1)' UNION ALL SELECT '(1,0)' ) AS data ;
-           spath           
----------------------------
- {(0 , 1),(1 , 1),(1 , 0)}
+                                      spath                                      
+---------------------------------------------------------------------------------
+ {(0.00000000 , 1.00000000),(1.00000000 , 1.00000000),(1.00000000 , 0.00000000)}
 (1 row)
 
 --
@@ -450,9 +450,9 @@ SELECT spath '{(0.11,0.15),(0.12,0.15),(0.13,0.15)}' @ :poly;
 
 -- create path
 SELECT spath(data.p) FROM ( SELECT spoint '(0,1)' as p UNION ALL SELECT spoint '(1,1)' UNION ALL SELECT '(1,0)' ) AS data ;
-           spath           
----------------------------
- {(0 , 1),(1 , 1),(1 , 0)}
+                                      spath                                      
+---------------------------------------------------------------------------------
+ {(0.00000000 , 1.00000000),(1.00000000 , 1.00000000),(1.00000000 , 0.00000000)}
 (1 row)
 
 SELECT set_sphere_output( 'DEG' );
@@ -463,9 +463,9 @@ SELECT set_sphere_output( 'DEG' );
 
 -- test stored data
 SELECT spoint(p,2) FROM spheretmp6 WHERE id=2;
-   spoint   
-------------
- (1d , -5d)
+            spoint            
+------------------------------
+ (1.00000000d , -5.00000000d)
 (1 row)
 
 SELECT set_sphere_output( 'RAD' );
@@ -476,20 +476,20 @@ SELECT set_sphere_output( 'RAD' );
 
 -- get n-th point and array representation path points tests
 SELECT spoint( spath '{(0, 0),(1, 1)}', 1 );
- spoint  
----------
- (0 , 0)
+          spoint           
+---------------------------
+ (0.00000000 , 0.00000000)
 (1 row)
 
 SELECT spoint( spath '{(0, 0),(1, 1)}', 2 );
- spoint  
----------
- (1 , 1)
+          spoint           
+---------------------------
+ (1.00000000 , 1.00000000)
 (1 row)
 
 SELECT spath_as_array( spath '{(0, 0),(1, 1)}');
-    spath_as_array     
------------------------
- {"(0 , 0)","(1 , 1)"}
+                      spath_as_array                       
+-----------------------------------------------------------
+ {"(0.00000000 , 0.00000000)","(1.00000000 , 1.00000000)"}
 (1 row)
 
