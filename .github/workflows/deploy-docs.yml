@@ -1,10 +1,10 @@
 name: Build and Deploy Docs
 
-# Deploy docs only for master
+# Deploy docs when a new release is published or manually
 on:
-  push:
-    branches:
-      - "master"
+  release:
+    types: [published]
+  workflow_dispatch:
 
 # Allow deployment to GitHub Pages
 permissions:
@@ -42,10 +42,10 @@ jobs:
       uses: actions/configure-pages@v3
 
     - name: Upload artifact
-      uses: actions/upload-pages-artifact@v2
+      uses: actions/upload-pages-artifact@v4
       with:
         path: 'doc/html'
 
     - name: Deploy to GitHub Pages
       id: deployment
-      uses: actions/deploy-pages@v2
+      uses: actions/deploy-pages@v4
